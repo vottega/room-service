@@ -14,6 +14,7 @@ import vottega.room_service.adaptor.RoomProducer
 import vottega.room_service.domain.enumeration.RoomStatus
 import vottega.room_service.dto.ParticipantInfoDTO
 import vottega.room_service.dto.ParticipantRoleDTO
+import vottega.room_service.exception.RoleStatusConflictException
 import vottega.room_service.exception.RoomStatusConflictException
 import vottega.room_service.repository.RoomRepository
 
@@ -219,7 +220,7 @@ class RoomServiceImplTest {
 
     val newRole = ParticipantRoleDTO("newRole", true)
     roomService.addRole(roomResponseDTO.id, newRole)
-    
+
     val foundRoom = roomService.getRoom(roomResponseDTO.id)
     assertThat(foundRoom.roles.size).isEqualTo(3)
     assertThat(foundRoom.roles).anyMatch({ it.role == newRole.role && it.canVote })
@@ -228,5 +229,20 @@ class RoomServiceImplTest {
     val foundRoom2 = roomService.getRoom(roomResponseDTO.id)
     assertThat(foundRoom2.roles.size).isEqualTo(2)
     assertThat(foundRoom2.roles).noneMatch({ it.role == newRole.role })
+  }
+
+  @Test
+  fun `역할 삭제 시에 해당 역할을 가지고 있는 참가자가 있을 경우 conflict를 내야 한다`() {
+    val roomName = "testRoom"
+    val ownerId = 1L
+    val participantRoleDTO1 = ParticipantRoleDTO("voter", true)
+    val participantRoleDTO2 = ParticipantRoleDTO("viewer", false)
+    val roomResponseDTO = roomService.createRoom(roomName, ownerId, listOf(participantRoleDTO1, participantRoleDTO2))
+    val participant1 = ParticipantInfoDTO("민균", null, "회장", "voter")
+    roomService.addParticipant(roomResponseDTO.id, listOf(participant1))
+
+    assertThrows<RoleStatusConflictException> {
+      roomService.deleteRole(roomResponseDTO.id, participantRoleDTO1.role)
+    }
   }
 }
