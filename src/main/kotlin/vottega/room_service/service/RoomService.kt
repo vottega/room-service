@@ -121,7 +121,9 @@ class RoomService(
   fun addRole(roomId: Long, roleInfo: ParticipantRoleDTO): RoomResponseDTO {
     val room = roomRepository.findById(roomId).orElseThrow { RoomNotFoundException(roomId) }
     room.apply { addParticipantRole(roleInfo.role, roleInfo.canVote) }
-    return roomMapper.toRoomOutDTO(room)
+    val roomDTO = roomMapper.toRoomOutDTO(room)
+    roomProducer.roomEditMessageProduce(roomDTO)
+    return roomDTO
   }
 
 
@@ -129,7 +131,9 @@ class RoomService(
   fun deleteRole(roomId: Long, role: String): RoomResponseDTO {
     val room = roomRepository.findById(roomId).orElseThrow { RoomNotFoundException(roomId) }
     room.apply { deleteParticipantRole(role) }
-    return roomMapper.toRoomOutDTO(room)
+    val roomDTO = roomMapper.toRoomOutDTO(room)
+    roomProducer.roomEditMessageProduce(roomDTO)
+    return roomDTO
   }
 
   @PreAuthorize("@roomSecurity.isParticipantInRoom(#roomId, authentication.principal)")
