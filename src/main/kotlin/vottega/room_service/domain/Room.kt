@@ -76,6 +76,9 @@ class Room(
 
   fun deleteParticipantRole(role: String) {
     val participantRole = this.participantRoleList.find { it.role == role }
+    if (participantList.any { it.participantRole.role == role }) {
+      throw RoleStatusConflictException(role)
+    }
     if (participantRole == null) {
       throw RoleNotFoundException(role)
     }
